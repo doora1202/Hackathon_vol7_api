@@ -50,7 +50,7 @@ async def calculate_similarity(data: QueryData):
                 "sentences": abstracts
             }
         }
-        similarity_output = map(int,hf_api(similarity_payload))
+        similarity_output = map(float,hf_api(similarity_payload))
         
         # 各論文にスコアを追加
         for entry, score in zip(entries, similarity_output):
