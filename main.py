@@ -51,11 +51,12 @@ async def calculate_similarity(data: QueryData):
             }
         }
         similarity_output = hf_api(similarity_payload)
-        print(similarity_output)
+        
         # 各論文にスコアを追加
-        for entry, score in zip(entries, similarity_output['scores']):
+        for entry, score in zip(entries, similarity_output):
             entry['score'] = score
         
         return entries
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
