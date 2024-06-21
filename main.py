@@ -51,7 +51,7 @@ async def calculate_similarity(data: QueryData):
             }
         }
         similarity_output = hf_api(similarity_payload)
-        
+        print(similarity_output)
         # 各論文にスコアを追加
         for entry, score in zip(entries, similarity_output['scores']):
             entry['score'] = score
