@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
 import xml.etree.ElementTree as ET
@@ -8,6 +9,10 @@ import os
 app = FastAPI()
 load_dotenv()
 
+origins = [
+    "http://localhost:3000",
+    "https://hackathon-v7.vercel.app/"
+]
 # Hugging Face API設定
 hf_api_url = "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2"
 hf_headers = {"Authorization": f"Bearer {os.getenv('HF_API_KEY')}"}
