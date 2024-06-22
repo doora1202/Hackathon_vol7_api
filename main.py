@@ -16,8 +16,8 @@ def hf_api(payload):
     response = requests.post(hf_api_url, headers=hf_headers, json=payload)
     return response.json()
 
-# arXiv APIからアブストラクトを取得する関数
-def fetch_abstracts_from_arxiv(query, max_results=5):
+# arXiv APIから詳細情報を取得する関数
+def fetch_details_from_arxiv(query, max_results=5):
     base_url = "http://export.arxiv.org/api/query"
     params = {
         "search_query": query,
@@ -29,10 +29,12 @@ def fetch_abstracts_from_arxiv(query, max_results=5):
     abstracts = []
     entries = []
     for entry in root.findall("{http://www.w3.org/2005/Atom}entry"):
+        title = entry.find("{http://www.w3.org/2005/Atom}title").text.strip()
         abstract = entry.find("{http://www.w3.org/2005/Atom}summary").text.strip()
         id_link = entry.find("{http://www.w3.org/2005/Atom}id").text.strip()
+        authors = [author.find("{http://www.w3.org/2005/Atom}name").text for author in entry.findall("{http://www.w3.org/2005/Atom}author")]
         abstracts.append(abstract)
-        entries.append({"abstract": abstract, "link": id_link})
+        entries.append({"title": title, "authors": authors,"abstract": abstract, "link": id_link})
     return abstracts, entries
 
 class QueryData(BaseModel):
@@ -43,7 +45,7 @@ class QueryData(BaseModel):
 @app.post("/similarity/")
 async def calculate_similarity(data: QueryData):
     try:
-        abstracts, entries = fetch_abstracts_from_arxiv(data.query, data.max_results)
+        abstracts, entries = fetch_details_from_arxiv(data.query, data.max_results)
         if not abstracts:
             raise HTTPException(status_code=404, detail="No abstracts found for the given query.")
         
@@ -53,8 +55,9 @@ async def calculate_similarity(data: QueryData):
                 "sentences": abstracts
             }
         }
-        similarity_output = map(float,hf_api(similarity_payload))
-
+        similarity_results = hf_api(similarity_payload)
+        similarity_output = map(float, similarity_results)
+        
         # 各論文にスコアを追加
         for entry, score in zip(entries, similarity_output):
             entry['score'] = score
@@ -62,4 +65,3 @@ async def calculate_similarity(data: QueryData):
         return entries
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
