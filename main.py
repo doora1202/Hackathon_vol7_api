@@ -14,6 +14,8 @@ hf_headers = {"Authorization": f"Bearer {os.getenv('HF_API_KEY')}"}
 
 def hf_api(payload):
     response = requests.post(hf_api_url, headers=hf_headers, json=payload)
+    if response.status_code != 200:
+        return []  # Hugging Face APIからの応答がエラーの場合は空リストを返す
     return response.json()
 
 # arXiv APIから詳細情報を取得する関数
@@ -34,7 +36,7 @@ def fetch_details_from_arxiv(query, max_results=5):
         id_link = entry.find("{http://www.w3.org/2005/Atom}id").text.strip()
         authors = [author.find("{http://www.w3.org/2005/Atom}name").text for author in entry.findall("{http://www.w3.org/2005/Atom}author")]
         abstracts.append(abstract)
-        entries.append({"title": title, "authors": authors,"abstract": abstract, "link": id_link})
+        entries.append({"title": title, "authors": authors, "abstract": abstract, "link": id_link, "score": None})
     return abstracts, entries
 
 class QueryData(BaseModel):
@@ -56,12 +58,14 @@ async def calculate_similarity(data: QueryData):
             }
         }
         similarity_results = hf_api(similarity_payload)
-        similarity_output = map(float, similarity_results)
-        
-        # 各論文にスコアを追加
-        for entry, score in zip(entries, similarity_output):
+        if not similarity_results:
+            raise HTTPException(status_code=404, detail="Could not compute similarity.")
+
+        # 各論文にスコアを追加し、スコアに基づいてソート
+        for entry, score in zip(entries, similarity_results):
             entry['score'] = score
+        sorted_entries = sorted(entries, key=lambda x: x['score'], reverse=True)
         
-        return entries
+        return sorted_entries
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
