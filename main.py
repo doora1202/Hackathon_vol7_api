@@ -18,13 +18,22 @@ def hf_api(payload):
         return []  # Hugging Face APIからの応答がエラーの場合は空リストを返す
     return response.json()
 
+class QueryData(BaseModel):
+    source_abstract: str
+    query: str
+    max_results: int = 5
+    sort_by: str = 'submittedDate'  # sortBy のデフォルト値
+    sort_order: str = 'descending'  # sortOrder のデフォルト値
+
 # arXiv APIから詳細情報を取得する関数
-def fetch_details_from_arxiv(query, max_results=5):
+def fetch_details_from_arxiv(data: QueryData):
     base_url = "http://export.arxiv.org/api/query"
     params = {
-        "search_query": query,
-        "max_results": max_results,
-        "start": 0
+        "search_query": data.query,
+        "max_results": data.max_results,
+        "start": 0,
+        "sortBy": data.sort_by,
+        "sortOrder": data.sort_order
     }
     response = requests.get(base_url, params=params)
     root = ET.fromstring(response.text)
@@ -39,15 +48,10 @@ def fetch_details_from_arxiv(query, max_results=5):
         entries.append({"title": title, "authors": authors, "abstract": abstract, "link": id_link, "score": None})
     return abstracts, entries
 
-class QueryData(BaseModel):
-    source_abstract: str
-    query: str
-    max_results: int = 5
-
 @app.post("/similarity/")
 async def calculate_similarity(data: QueryData):
     try:
-        abstracts, entries = fetch_details_from_arxiv(data.query, data.max_results)
+        abstracts, entries = fetch_details_from_arxiv(data)
         if not abstracts:
             raise HTTPException(status_code=404, detail="No abstracts found for the given query.")
         
