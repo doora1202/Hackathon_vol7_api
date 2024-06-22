@@ -11,7 +11,7 @@ load_dotenv()
 
 origins = [
     "http://localhost:3000",
-    "https://hackathon-v7.vercel.app/"
+    "https://hackathon-v7.vercel.app"
 ]
 
 app.add_middleware(
