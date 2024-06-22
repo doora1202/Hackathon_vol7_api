@@ -13,6 +13,14 @@ origins = [
     "http://localhost:3000",
     "https://hackathon-v7.vercel.app/"
 ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Hugging Face API設定
 hf_api_url = "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2"
 hf_headers = {"Authorization": f"Bearer {os.getenv('HF_API_KEY')}"}
