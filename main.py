@@ -2,12 +2,15 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
 import xml.etree.ElementTree as ET
+from dotenv import load_dotenv
+import os
 
 app = FastAPI()
+load_dotenv()
 
 # Hugging Face API設定
 hf_api_url = "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2"
-hf_headers = {"Authorization": "Bearer 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"}
+hf_headers = {"Authorization": f"Bearer {os.getenv('HF_API_KEY')}"}
 
 def hf_api(payload):
     response = requests.post(hf_api_url, headers=hf_headers, json=payload)
@@ -51,7 +54,7 @@ async def calculate_similarity(data: QueryData):
             }
         }
         similarity_output = map(float,hf_api(similarity_payload))
-        
+
         # 各論文にスコアを追加
         for entry, score in zip(entries, similarity_output):
             entry['score'] = score
